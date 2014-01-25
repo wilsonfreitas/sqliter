@@ -26,6 +26,12 @@ I don't like repeated code, it smells bad and
 I take seriously the DRY principle.
 That is the reason why I created **sqliter**, to take away this misery of my life.
 
+## Install
+
+Use `devtools`.
+
+## Introduction
+
 In order to use **sqliter** you must declare the path where your SQLite files
 are hidden.
 
@@ -38,9 +44,39 @@ and query the databases.
 where `database_dummy` is the name of SQLite file, without extension, lying
 inside some directory declared in the `path`.
 So, it should stand for `data/database_dummy.db`, `../project2/data/database_dummy.db` or `/path/to/project3/data/database_dummy.db`.
+
+If you have multiple files with the same name the priority is given accordingly the path order, exactly the same way shells like bash and csh do.
+Then, in our example, `data/database_dummy.db` would be the selected database.
+
 The returned object, `ds`, is a `data.frame` with a column named `count(*)`.
 The column names can be manipulated like any other sql call, appending a label after the variable.
 
-> Warning: **sqliter** is deeply intended to research purposes. I understand that
-> by no means it should be used in any kind of production code.
+## Prepared queries
+
+For parameterized queries we have **prepared queries**.
+You simply create queries with placeholders for the parameters and fulfill its values passing additional arguments to `query_*` function.
+
+	ds <- DBM$query_database_dummy('select name, country from dummytable where name = :name',
+	      name='Macunaima')
+
+Note the placeholder `:name`, it is related to the argument `name='Macunaima'`.
+These arguments accept multiple values like `name=c('Macunaima', 'Borba Gato')`.
+The above example would return a `data.frame` with two columns named `name` and `country`.
+
+## Trasforming data
+
+You can get your data transformed the way you want by using the argument `post_proc`.
+This argument must have a function which expects to receive a `data.frame` and returns whatever you want.
+I usually use `post_proc` for renaming columns and converting strings into datetime objects.
+
+	ds <- DBM$query_database_dummy('select birthday, name, country from dummytable where name = :name',
+		name='Macunaima', post_proc=function(ds) {
+			ds <- transform(ds, Birthday=as.Date(birthday, format='%d/%m/%Y'))
+			ds
+		})
+
+## Disclaimer
+
+> **sqliter** is deeply intended to research purposes, mainly data munging.
+> I understand that by no means it should be used in any kind of production code.
 

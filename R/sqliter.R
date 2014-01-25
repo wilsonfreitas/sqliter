@@ -1,11 +1,26 @@
+#' Functions to wrap SQLite calls
+#' 
+#' sqliter helps users, mainly data munging practioneers, to organize
+#' their sql calls in a clean structure. It simplifies the process of
+#' extracting and transforming data into useful formats.
+#'
+#' @name sqliter-package
+#' @docType package
+NULL
 
-
+#' Creates the sqliter a kinf of SQLite database manager, but not that far.
+#' 
+#' \code{sqliter} object works pretty much like a database manager helping users to execute queries and transform data through a clean interface.
+#' 
+#' @export
+#' @param ... arguments such as \code{path} must be provided during object instantiation.
+#' @examples
+#' \dontrun{DBM <- sqliter(path=c('data', 'another/project/data'))}
+#' 
 sqliter <- function(...) {
     defaults <- list(...)
     
-    get <- function(name, default=FALSE, drop=TRUE) {
-        if (default)
-            defaults <- value  # this is only a local version
+    get <- function(name, drop=TRUE) {
         if (missing(name))
             defaults
         else {
@@ -23,26 +38,62 @@ sqliter <- function(...) {
         defaults <<- merge(dots)
         invisible(NULL)
     }
-    merge <- function(values) merge_list(defaults, values)
-    restore <- function(target = value) defaults <<- target
     
-    this <- list(get=get, set=set, merge=merge, restore=restore)
+    this <- list(get=get, set=set)
     class(this) <- 'sqliter'
     this
 }
 
-find_database <- function(object, ...) UseMethod('find_database', object)
+#' returns the paths of the given database
+#' 
+#' @param object \code{sqliter} object
+#' @param database the SQLite database filename without extension
+#' @export
+#' @examples
+#' \dontrun{
+#' DBM <- sqliter(path=c('data', 'another/project/data'))
+#' find_database(DBM, 'dummydatabase')
+#' # 'data/dummydatabase.db'
+#' }
+find_database <- function(object, database) UseMethod('find_database', object)
 
-find_database.sqliter <- function(handler, database) {
-    path <- paste0(handler$get('path'), database, '.db')
+#' @rdname find_database
+#' @method find_database sqliter
+#' @S3method find_database sqliter
+find_database.sqliter <- function(object, database) {
+    path <- paste0(object$get('path'), '/', database, '.db')
     res <- sapply(path, file.exists)
     path[res]
 }
 
+#' execute query into a given database
+#' 
+#' Once you have a \code{sqliter} database properly set you can execute queries into that database and get your data transformed.
+#' By default this function returns a data.frame object, but if you transform your data you can get whatever you need.
+#' 
+#' @param object \code{sqliter} object
+#' @param database the SQLite database filename without extension
+#' @param query the query string
+#' @param post_proc a function to transform data, it receives a database and returns whatever you need.
+#' @param ... additional arguments used by prepared queries
+#' @export
+#' @examples
+#' \dontrun{
+#' DBM <- sqliter(path=c('data', 'another/project/data'))
+#' ds <- execute(DBM, 'dummydatabase', 'select count(*) from dummytable')
+#' ds <- execute(DBM, 'dummydatabase', 'select * from dummytable where name = :name', name=c('Macunamima', 'Borba Gato'))
+#' ds <- execute(DBM, 'dummydatabase', 'select * from dummytable where name = :name', name=c('Macunamima', 'Borba Gato'), post_proc=function(ds) {
+#' ds <- transform(ds, birthday=as.Date(birthday))
+#' ds
+#' })
+#' }
 execute <- function(object, ...) UseMethod('execute', object)
 
-execute.sqliter <- function(handler, database, query, post_proc=identity, ...) {
-    path <- find_database(handler, database)
+#' @rdname execute
+#' @method execute sqliter
+#' @S3method execute sqliter
+execute.sqliter <- function(object, database, query, post_proc=identity, ...) {
+    path <- find_database(object, database)
     stopifnot(length(path) == 1)
     conn <- dbConnect('SQLite', path)
     if (length(list(...)) != 0) {
@@ -54,12 +105,15 @@ execute.sqliter <- function(handler, database, query, post_proc=identity, ...) {
     post_proc(ds)
 }
 
-'$.sqliter' <- function(handler, name) {
+#' 
+#' @method $ sqliter
+#' @S3method $ sqliter
+'$.sqliter' <- function(object, name) {
     if (str_detect(name, "^query_(.*)$")) {
         database <- unlist(str_split_fixed(name, "_", 2))[2]
-        Curry(execute, handler, database)
+        Curry(execute, object, database)
     } else {
-        handler[[name]]
+        object[[name]]
     }
 }
 

@@ -1,0 +1,19 @@
+\name{sqliter}
+\alias{sqliter}
+\title{Creates the sqliter a kinf of SQLite database manager, but not that far.}
+\usage{
+  sqliter(...)
+}
+\arguments{
+  \item{...}{arguments such as \code{path} must be provided
+  during object instantiation.}
+}
+\description{
+  \code{sqliter} object works pretty much like a database
+  manager helping users to execute queries and transform
+  data through a clean interface.
+}
+\examples{
+\dontrun{DBM <- sqliter(path=c('data', 'another/project/data'))}
+}
+
