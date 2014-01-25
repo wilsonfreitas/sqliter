@@ -15,7 +15,7 @@ NULL
 #' @export
 #' @param ... arguments such as \code{path} must be provided during object instantiation.
 #' @examples
-#' \dontrun{DBM <- sqliter(path=c('data', 'another/project/data'))}
+#' \dontrun{DBM <- sqliter(path=c("data", "another/project/data"))}
 #' 
 sqliter <- function(...) {
     defaults <- list(...)
@@ -51,9 +51,9 @@ sqliter <- function(...) {
 #' @export
 #' @examples
 #' \dontrun{
-#' DBM <- sqliter(path=c('data', 'another/project/data'))
-#' find_database(DBM, 'dummydatabase')
-#' # 'data/dummydatabase.db'
+#' DBM <- sqliter(path=c("data", "another/project/data"))
+#' find_database(DBM, "dummydatabase")
+#' # "data/dummydatabase.db"
 #' }
 find_database <- function(object, database) UseMethod('find_database', object)
 
@@ -79,10 +79,13 @@ find_database.sqliter <- function(object, database) {
 #' @export
 #' @examples
 #' \dontrun{
-#' DBM <- sqliter(path=c('data', 'another/project/data'))
-#' ds <- execute(DBM, 'dummydatabase', 'select count(*) from dummytable')
-#' ds <- execute(DBM, 'dummydatabase', 'select * from dummytable where name = :name', name=c('Macunamima', 'Borba Gato'))
-#' ds <- execute(DBM, 'dummydatabase', 'select * from dummytable where name = :name', name=c('Macunamima', 'Borba Gato'), post_proc=function(ds) {
+#' DBM <- sqliter(path=c("data", "another/project/data"))
+#' ds <- execute(DBM, "dummydatabase", "select count(*) from dummytable")
+#' ds <- execute(DBM, "dummydatabase", "select * from dummytable where 
+#'       name = :name", name=c("Macunamima", "Borba Gato"))
+#' ds <- execute(DBM, "dummydatabase", "select * from dummytable where
+#'       name = :name", name=c("Macunamima", "Borba Gato"),
+#'         post_proc=function(ds) {
 #' ds <- transform(ds, birthday=as.Date(birthday))
 #' ds
 #' })
@@ -105,7 +108,6 @@ execute.sqliter <- function(object, database, query, post_proc=identity, ...) {
     post_proc(ds)
 }
 
-#' 
 #' @method $ sqliter
 #' @S3method $ sqliter
 '$.sqliter' <- function(object, name) {
@@ -117,4 +119,21 @@ execute.sqliter <- function(object, database, query, post_proc=identity, ...) {
     }
 }
 
-
+#' query functions
+#' 
+#' **query functions** are dynamic functions which connect to a database, execute queries in it and transform data.
+#' Actually it is a decorator for \code{execute} function.
+#' \code{execute} has 5 arguments.
+#' The first argument is an instance of the \code{sqliter} class and the second is the database name.
+#' The call to a query function is executed like a method call to the \code{sqliter} object through the \code{$} operator.
+#' The function name must have the following pattern: \code{query_<database name without extension>}.
+#' This call returns an \code{execute} function with the first 2 argument already set.
+#' The first parameter is the \code{sqliter} object on which the \code{$} operator have been called and the second argument is extracted from the query function name, the name after the preffix \code{query_}.
+#' 
+#' @name query-functions
+#' @examples
+#' \dontrun{
+#' DBM <- sqliter(path=c("data", "another/project/data"))
+#' DBM$query_dummydatabase("select count(*) from dummytable")
+#' }
+NULL
