@@ -1,0 +1,7 @@
+
+S3method("$", sqliter)
+S3method(execute, sqliter)
+S3method(find_database, sqliter)
+export(execute)
+export(find_database)
+export(sqliter)
