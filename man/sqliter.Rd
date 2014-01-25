@@ -14,6 +14,6 @@
   data through a clean interface.
 }
 \examples{
-\dontrun{DBM <- sqliter(path=c('data', 'another/project/data'))}
+\dontrun{DBM <- sqliter(path=c("data", "another/project/data"))}
 }
 

@@ -30,10 +30,13 @@
 }
 \examples{
 \dontrun{
-DBM <- sqliter(path=c('data', 'another/project/data'))
-ds <- execute(DBM, 'dummydatabase', 'select count(*) from dummytable')
-ds <- execute(DBM, 'dummydatabase', 'select * from dummytable where name = :name', name=c('Macunamima', 'Borba Gato'))
-ds <- execute(DBM, 'dummydatabase', 'select * from dummytable where name = :name', name=c('Macunamima', 'Borba Gato'), post_proc=function(ds) {
+DBM <- sqliter(path=c("data", "another/project/data"))
+ds <- execute(DBM, "dummydatabase", "select count(*) from dummytable")
+ds <- execute(DBM, "dummydatabase", "select * from dummytable where
+      name = :name", name=c("Macunamima", "Borba Gato"))
+ds <- execute(DBM, "dummydatabase", "select * from dummytable where
+      name = :name", name=c("Macunamima", "Borba Gato"),
+        post_proc=function(ds) {
 ds <- transform(ds, birthday=as.Date(birthday))
 ds
 })

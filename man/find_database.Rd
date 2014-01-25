@@ -18,9 +18,9 @@
 }
 \examples{
 \dontrun{
-DBM <- sqliter(path=c('data', 'another/project/data'))
-find_database(DBM, 'dummydatabase')
-# 'data/dummydatabase.db'
+DBM <- sqliter(path=c("data", "another/project/data"))
+find_database(DBM, "dummydatabase")
+# "data/dummydatabase.db"
 }
 }
 
