@@ -9,7 +9,7 @@ Description: sqliter helps users, mainly data munging practioneers, to organize
     their sql calls in a clean structure. It simplifies the process of
     extracting and transforming data into useful formats.
 License: MIT + file LICENSE
-Depends:
+Imports:
     stringr,
     functional,
     DBI,

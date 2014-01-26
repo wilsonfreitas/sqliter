@@ -11,7 +11,7 @@
   executed like a method call to the \code{sqliter} object
   through the \code{$} operator. The function name must
   have the following pattern: \code{query_<database name
-  without extension>}. This call returns an execute
+  without extension>}. This call returns an \code{execute}
   function with the first 2 argument already set. The first
   parameter is the \code{sqliter} object on which the
   \code{$} operator have been called and the second
@@ -21,7 +21,7 @@
 \examples{
 \dontrun{
 DBM <- sqliter(path=c("data", "another/project/data"))
-DBM$query_dummydatabase('select count(*) from dummytable')
+DBM$query_dummydatabase("select count(*) from dummytable")
 }
 }
 

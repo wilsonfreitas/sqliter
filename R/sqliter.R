@@ -6,6 +6,10 @@
 #'
 #' @name sqliter-package
 #' @docType package
+#' @import stringr
+#' @import DBI
+#' @import RSQLite
+#' @import functional
 NULL
 
 #' Creates the sqliter a kinf of SQLite database manager, but not that far.
