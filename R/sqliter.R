@@ -70,6 +70,27 @@ find_database.sqliter <- function(object, database) {
     path[res]
 }
 
+#' lists databases into path
+#' 
+#' @param object \code{sqliter} object
+#' @param filter
+#' @export
+#' @examples
+#' DBM <- sqliter(path='data')
+#' list_databases(DBM)
+#' list_databases(DBM, 'fu')
+list_databases <- function(object, filter='') UseMethod('list_databases', object)
+
+#' @rdname list_databases
+#' @method list_databases sqliter
+#' @S3method list_databases sqliter
+list_databases.sqliter <- function(object, filter='') {
+	list.f <- function(x) list.files(x, '*.db')
+	databases <- do.call(c, lapply(object$get('path'), list.f))
+	databases <- Filter(function(x) str_detect(x, filter), databases)
+	sort(str_replace(databases, '\\.db', ''))
+}
+
 #' execute query into a given database
 #' 
 #' Once you have a \code{sqliter} database properly set you can execute queries into that database and get your data transformed.

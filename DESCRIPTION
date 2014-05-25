@@ -14,5 +14,3 @@ Imports:
     functional,
     DBI,
     RSQLite
-Collate:
-    'sqliter.R'
