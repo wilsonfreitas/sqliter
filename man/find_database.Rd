@@ -3,9 +3,9 @@
 \alias{find_database.sqliter}
 \title{returns the paths of the given database}
 \usage{
-  find_database(object, database)
+find_database(object, database)
 
-  \method{find_database}{sqliter} (object, database)
+\method{find_database}{sqliter}(object, database)
 }
 \arguments{
   \item{object}{\code{sqliter} object}
@@ -14,7 +14,7 @@
   extension}
 }
 \description{
-  returns the paths of the given database
+returns the paths of the given database
 }
 \examples{
 \dontrun{

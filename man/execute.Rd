@@ -3,10 +3,9 @@
 \alias{execute.sqliter}
 \title{execute query into a given database}
 \usage{
-  execute(object, ...)
+execute(object, ...)
 
-  \method{execute}{sqliter} (object, database, query,
-    post_proc = identity, ...)
+\method{execute}{sqliter}(object, database, query, post_proc = identity, ...)
 }
 \arguments{
   \item{object}{\code{sqliter} object}
@@ -22,11 +21,11 @@
   \item{...}{additional arguments used by prepared queries}
 }
 \description{
-  Once you have a \code{sqliter} database properly set you
-  can execute queries into that database and get your data
-  transformed. By default this function returns a
-  data.frame object, but if you transform your data you can
-  get whatever you need.
+Once you have a \code{sqliter} database properly set you
+can execute queries into that database and get your data
+transformed. By default this function returns a data.frame
+object, but if you transform your data you can get whatever
+you need.
 }
 \examples{
 \dontrun{
