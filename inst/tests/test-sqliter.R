@@ -4,6 +4,8 @@ test_that('it should create sqliter', {
 	DBM <- sqliter(path='.')
 	expect_is(DBM, 'sqliter')
 	expect_equal(DBM$get('path'), '.')
+	DBM <- sqliter()
+	expect_equal(DBM$get('path'), '.')
 })
 
 context('database functions')

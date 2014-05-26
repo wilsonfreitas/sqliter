@@ -21,8 +21,8 @@ NULL
 #' @examples
 #' \dontrun{DBM <- sqliter(path=c("data", "another/project/data"))}
 #' 
-sqliter <- function(...) {
-    defaults <- list(...)
+sqliter <- function(path='.', ...) {
+    defaults <- list(path=path, ...)
     
     get <- function(name, drop=TRUE) {
         if (missing(name))
@@ -34,6 +34,7 @@ sqliter <- function(...) {
                 defaults[name]
         }
     }
+	
     set <- function(...) {
         dots <- list(...)
         if (length(dots) == 0) return()
