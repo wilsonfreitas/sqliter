@@ -124,7 +124,7 @@ execute <- function(object, ...) UseMethod('execute', object)
 execute.sqliter <- function(object, database, query, post_proc=identity, ...) {
   path <- find_database(object, database)
   stopifnot(length(path) == 1)
-  conn <- dbConnect('SQLite', path)
+  conn <- dbConnect(RSQLite::SQLite(), path)
   if (length(list(...)) != 0) {
     ds <- dbGetPreparedQuery(conn, query, data.frame(...))
   } else {
