@@ -22,31 +22,31 @@ NULL
 #' \dontrun{DBM <- sqliter(path=c("data", "another/project/data"))}
 #' 
 sqliter <- function(path='.', ...) {
-    defaults <- list(path=path, ...)
+  defaults <- list(path=path, ...)
     
-    get <- function(name, drop=TRUE) {
-        if (missing(name))
-            defaults
-        else {
-            if (drop && length(name) == 1)
-                defaults[[name]]
-            else
-                defaults[name]
-        }
+  get <- function(name, drop=TRUE) {
+    if (missing(name))
+      defaults
+    else {
+      if (drop && length(name) == 1)
+        defaults[[name]]
+      else
+        defaults[name]
     }
+  }
 	
-    set <- function(...) {
-        dots <- list(...)
-        if (length(dots) == 0) return()
-        if (is.null(names(dots)) && length(dots) == 1 && is.list(dots[[1]]))
-            if (length(dots <- dots[[1]]) == 0) return()
-        defaults <<- merge(dots)
-        invisible(NULL)
-    }
+  set <- function(...) {
+    dots <- list(...)
+    if (length(dots) == 0) return()
+      if (is.null(names(dots)) && length(dots) == 1 && is.list(dots[[1]]))
+        if (length(dots <- dots[[1]]) == 0) return()
+          defaults <<- merge(dots)
+    invisible(NULL)
+  }
     
-    this <- list(get=get, set=set)
-    class(this) <- 'sqliter'
-    this
+  this <- list(get=get, set=set)
+  class(this) <- 'sqliter'
+  this
 }
 
 #' returns the paths of the given database
@@ -66,9 +66,9 @@ find_database <- function(object, database) UseMethod('find_database', object)
 #' @method find_database sqliter
 #' @S3method find_database sqliter
 find_database.sqliter <- function(object, database) {
-    path <- paste0(object$get('path'), '/', database, '.db')
-    res <- sapply(path, file.exists)
-    path[res]
+  path <- paste0(object$get('path'), '/', database, '.db')
+  res <- sapply(path, file.exists)
+  path[res]
 }
 
 #' lists databases into path
@@ -86,10 +86,10 @@ list_databases <- function(object, filter='') UseMethod('list_databases', object
 #' @method list_databases sqliter
 #' @S3method list_databases sqliter
 list_databases.sqliter <- function(object, filter='') {
-	list.f <- function(x) list.files(x, '*.db')
-	databases <- do.call(c, lapply(object$get('path'), list.f))
-	databases <- Filter(function(x) str_detect(x, filter), databases)
-	sort(str_replace(databases, '\\.db', ''))
+  list.f <- function(x) list.files(x, '*.db')
+  databases <- do.call(c, lapply(object$get('path'), list.f))
+  databases <- Filter(function(x) str_detect(x, filter), databases)
+  sort(str_replace(databases, '\\.db', ''))
 }
 
 #' execute query into a given database
@@ -122,27 +122,27 @@ execute <- function(object, ...) UseMethod('execute', object)
 #' @method execute sqliter
 #' @S3method execute sqliter
 execute.sqliter <- function(object, database, query, post_proc=identity, ...) {
-    path <- find_database(object, database)
-    stopifnot(length(path) == 1)
-    conn <- dbConnect('SQLite', path)
-    if (length(list(...)) != 0) {
-        ds <- dbGetPreparedQuery(conn, query, data.frame(...))
-    } else {
-        ds <- dbGetQuery(conn, query)
-    }
-    dbDisconnect(conn)
-    post_proc(ds)
+  path <- find_database(object, database)
+  stopifnot(length(path) == 1)
+  conn <- dbConnect('SQLite', path)
+  if (length(list(...)) != 0) {
+    ds <- dbGetPreparedQuery(conn, query, data.frame(...))
+  } else {
+    ds <- dbGetQuery(conn, query)
+  }
+  dbDisconnect(conn)
+  post_proc(ds)
 }
 
 #' @method $ sqliter
 #' @S3method $ sqliter
 '$.sqliter' <- function(object, name) {
-    if (str_detect(name, "^query_(.*)$")) {
-        database <- unlist(str_split_fixed(name, "_", 2))[2]
-        Curry(execute, object, database)
-    } else {
-        object[[name]]
-    }
+  if (str_detect(name, "^query_(.*)$")) {
+    database <- unlist(str_split_fixed(name, "_", 2))[2]
+    Curry(execute, object, database)
+  } else {
+    object[[name]]
+  }
 }
 
 #' query functions
