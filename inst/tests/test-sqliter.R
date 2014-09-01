@@ -33,4 +33,11 @@ test_that('it should execute a query', {
   expect_equal(as.numeric(unlist(res)), 40)
 })
 
+test_that('it should check error message', {
+  DBM <- sqliter(path='.')
+  expect_error(execute(DBM, 'xxx', 'select count(*) from sqlite_master'),
+    "DB file not found: xxx")
+})
+
+
 
