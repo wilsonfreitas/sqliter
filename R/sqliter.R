@@ -121,11 +121,13 @@ execute <- function(object, ...) UseMethod('execute', object)
 #' @rdname execute
 #' @method execute sqliter
 #' @S3method execute sqliter
-execute.sqliter <- function(object, database, query, post_proc=identity, ...) {
+execute.sqliter <- function(object, database, query, post_proc=identity,
+index=1, ...) {
   path <- find_database(object, database)
-  if (length(path) != 1)
+  if (length(path) == 0)
     stop("DB file not found: ", database)
-  conn <- dbConnect(RSQLite::SQLite(), path)
+  database <- path[index]
+  conn <- dbConnect(RSQLite::SQLite(), database)
   if (length(list(...)) != 0) {
     ds <- dbGetPreparedQuery(conn, query, data.frame(...))
   } else {
