@@ -5,7 +5,8 @@
 \usage{
 execute(object, ...)
 
-\method{execute}{sqliter}(object, database, query, post_proc = identity, ...)
+\method{execute}{sqliter}(object, database, query, post_proc = identity,
+  index = 1, ...)
 }
 \arguments{
   \item{object}{\code{sqliter} object}

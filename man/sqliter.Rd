@@ -2,7 +2,7 @@
 \alias{sqliter}
 \title{Creates the sqliter a kinf of SQLite database manager, but not that far.}
 \usage{
-sqliter(...)
+sqliter(path = ".", ...)
 }
 \arguments{
   \item{...}{arguments such as \code{path} must be provided
