@@ -49,28 +49,6 @@ sqliter <- function(path='.', ...) {
   this
 }
 
-#' returns the paths of the given database
-#' 
-#' @param object \code{sqliter} object
-#' @param database the SQLite database filename without extension
-#' @export
-#' @examples
-#' \dontrun{
-#' DBM <- sqliter(path=c("data", "another/project/data"))
-#' find_database(DBM, "dummydatabase")
-#' # "data/dummydatabase.db"
-#' }
-find_database <- function(object, database) UseMethod('find_database', object)
-
-#' @rdname find_database
-#' @method find_database sqliter
-#' @S3method find_database sqliter
-find_database.sqliter <- function(object, database) {
-  path <- paste0(object$get('path'), '/', database, '.db')
-  res <- sapply(path, file.exists)
-  path[res]
-}
-
 #' lists databases into path
 #' 
 #' @param object \code{sqliter} object
@@ -86,11 +64,42 @@ list_databases <- function(object, filter='') UseMethod('list_databases', object
 #' @method list_databases sqliter
 #' @S3method list_databases sqliter
 list_databases.sqliter <- function(object, filter='') {
-  list.f <- function(x) list.files(x, '*.db')
-  databases <- do.call(c, lapply(object$get('path'), list.f))
-  databases <- Filter(function(x) str_detect(x, filter), databases)
-  sort(str_replace(databases, '\\.db', ''))
+  databases <- do.call(rbind, lapply(object$get('path'), function(x) {
+    database <- str_replace(list.files(x, '*.db'), '\\.db', '')
+    path <- list.files(x, '*.db', full.names=TRUE)
+    cbind(database, path)
+  }))
+  databases <- apply(databases, 1, function(x) {
+    as.db(x[1], x[2])
+  })
+  as.dbl(Filter(function(x) str_detect(x$database, filter), databases))
 }
+
+list_entities <- function(object, filter, type, label) {
+  query <- "select name from sqlite_master where type = :type"
+  dbs <- list_databases(object, filter)
+  entity_list <- lapply(dbs, function(x) {
+    entity_names <- execute(x, query, type=type, post_proc=function(ds) {
+      ds$name
+    })
+    list(database=x$database, entity_names=entity_names)
+  })
+  as.entity_lists(lapply(entity_list, function(x) as.entity_list(x, label)))
+}
+
+#' @export
+list_tables <- function(object, filter='') UseMethod('list_tables', object)
+
+#' @export
+list_tables.sqliter <- function(object, filter='')
+  list_entities(object, filter, 'table', 'Tables')
+
+#' @export
+list_indexes <- function(object, filter='') UseMethod('list_indexes', object)
+
+#' @export
+list_indexes.sqliter <- function(object, filter='')
+  list_entities(object, filter, 'index', 'Indexes')
 
 #' execute query into a given database
 #' 
@@ -123,11 +132,16 @@ execute <- function(object, ...) UseMethod('execute', object)
 #' @S3method execute sqliter
 execute.sqliter <- function(object, database, query, post_proc=identity,
 index=1, ...) {
-  path <- find_database(object, database)
+  path <- list_databases(object, database)
   if (length(path) == 0)
-    stop("DB file not found: ", database)
-  database <- path[index]
-  conn <- dbConnect(RSQLite::SQLite(), database)
+    stop("Database not found: ", database)
+  database <- path[[index]]
+  execute(database, query, post_proc, ...)
+}
+
+execute.db <- function(object, query, post_proc=identity, ...) {
+  database <- object
+  conn <- dbConnect(RSQLite::SQLite(), database$path)
   if (length(list(...)) != 0) {
     ds <- dbGetPreparedQuery(conn, query, data.frame(...))
   } else {
@@ -166,3 +180,42 @@ index=1, ...) {
 #' DBM$query_dummydatabase("select count(*) from dummytable")
 #' }
 NULL
+
+as.db <- function(database, path) {
+  structure(list(database=database, path=path), class='db')
+}
+
+print.db <- function(x, ...) {
+  cat(x$database, x$path, '\n')
+  x
+}
+
+as.dbl <- function(dbl) {
+  structure(dbl, class='dbl')
+}
+
+print.dbl <- function(x, ...) {
+  for (db in x)
+    print(db)
+  x
+}
+
+as.entity_list <- function(database, label='') {
+  structure(database, class='entity_list', label=label)
+}
+
+print.entity_list <- function(x, ...) {
+  cat("Database:", x$database, '\n')
+  cat(paste0(attr(x, 'label'), ":"), x$entity_names, '\n\n')
+  x
+}
+
+as.entity_lists <- function(entity_lists) {
+  structure(entity_lists, class='entity_lists')
+}
+
+print.entity_lists <- function(x, ...) {
+  for (entity_list in x)
+    print(entity_list)
+  x
+}

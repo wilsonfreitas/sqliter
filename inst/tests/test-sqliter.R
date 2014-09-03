@@ -17,12 +17,29 @@ test_that('it should list tables in each database', {
 
 test_that('it should list databases', {
   DBM <- sqliter(path='.')
-  expect_equal(list_databases(DBM), c('dup', 'funds', 'test'))
+  dbs <- list_databases(DBM)
+  expect_is(dbs, 'dbl')
+  expect_true(length(list_databases(DBM)) == 3)
 })
 
 test_that('it should list databases using filter', {
   DBM <- sqliter(path='.')
-  expect_equal(list_databases(DBM, 'fu'), 'funds')
+  dbs <- list_databases(DBM, 'fu')
+  expect_true(length(dbs) == 1)
+  expect_true(dbs[[1]]$database == 'funds')
+})
+
+test_that("it should list tables from a database", {
+  DBM <- sqliter(path=c('.', 'db'))
+  tbls <- list_tables(DBM, 'funds')
+  expect_is(tbls, 'entity_lists')
+  expect_true(length(tbls) == 1)
+  expect_true(tbls[[1]]$database == 'funds')
+  expect_true(length(tbls[[1]]$entity_names) == 11)
+  tbls <- list_tables(DBM, 'dup')
+  expect_true(length(tbls) == 2)
+  expect_true(length(tbls[[1]]$entity_names) == 0)
+  expect_true(length(tbls[[2]]$entity_names) == 11)
 })
 
 context('execute query')
@@ -38,14 +55,16 @@ context('error message')
 test_that('it should check error message', {
   DBM <- sqliter(path='.')
   expect_error(execute(DBM, 'xxx', 'select count(*) from sqlite_master'),
-    "DB file not found: xxx")
+    "Database not found: xxx")
 })
 
 context('duplicates')
 
 test_that('it should handle duplicates', {
   DBM <- sqliter(path=c('.', 'db'))
-  expect_equal(list_databases(DBM, 'dup'), c('dup', 'dup'))
+  dbs <- list_databases(DBM, 'dup')
+  expect_true(length(dbs) == 2)
+  expect_equal(unname(sapply(dbs, function(x) x$database)), c('dup', 'dup'))
   res <- execute(DBM, 'dup', 'select count(*) from sqlite_master')
   expect_equal(as.numeric(unlist(res)), 0)
   res <- execute(DBM, 'dup', 'select count(*) from sqlite_master', index=2)
