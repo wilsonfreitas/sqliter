@@ -61,8 +61,7 @@ sqliter <- function(path='.', ...) {
 list_databases <- function(object, filter='') UseMethod('list_databases', object)
 
 #' @rdname list_databases
-#' @method list_databases sqliter
-#' @S3method list_databases sqliter
+#' @export
 list_databases.sqliter <- function(object, filter='') {
   databases <- do.call(rbind, lapply(object$get('path'), function(x) {
     database <- str_replace(list.files(x, '*.db'), '\\.db', '')
@@ -128,8 +127,7 @@ list_indexes.sqliter <- function(object, filter='')
 execute <- function(object, ...) UseMethod('execute', object)
 
 #' @rdname execute
-#' @method execute sqliter
-#' @S3method execute sqliter
+#' @export
 execute.sqliter <- function(object, database, query, post_proc=identity,
 index=1, ...) {
   path <- list_databases(object, database)
@@ -151,8 +149,7 @@ execute.db <- function(object, query, post_proc=identity, ...) {
   post_proc(ds)
 }
 
-#' @method $ sqliter
-#' @S3method $ sqliter
+#' @export
 '$.sqliter' <- function(object, name) {
   if (str_detect(name, "^query_(.*)$")) {
     database <- unlist(str_split_fixed(name, "_", 2))[2]
