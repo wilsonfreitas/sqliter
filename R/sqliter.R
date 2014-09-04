@@ -224,3 +224,14 @@ print.entity_lists <- function(x, ...) {
     print(entity_list)
   x
 }
+
+#' @export
+print.sqliter <- function(x, ...) {
+  path <- x$get('path')
+  cat("sqliter class", "\n\n")
+  cat("Path:", "\n")
+  for (dir in path)
+    cat(dir, '\n')
+  cat("\n")
+  x
+}
