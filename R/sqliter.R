@@ -235,3 +235,14 @@ print.sqliter <- function(x, ...) {
   cat("\n")
   x
 }
+
+#' @expot
+rac <- function(i, j) {
+  if (missing(i))
+    function(df) df[,j]
+  else if (missing(j))
+    function(df) df[i,]
+  else
+    function(df) df[i,j]
+}
+

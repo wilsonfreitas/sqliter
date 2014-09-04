@@ -71,3 +71,15 @@ test_that('it should handle duplicates', {
   expect_equal(as.numeric(unlist(res)), 3)
 })
 
+context('helpers')
+
+test_that('it should test rac function', {
+  DBM <- sqliter()
+  got <- execute(DBM, 'test', 'select * from test1', post_proc=rac(,1))
+  expect_equal(1:4, got)
+  got <- execute(DBM, 'test', 'select * from test1', post_proc=rac(1))
+  expect_equal(1, got$c1)
+  expect_equal('a', got$c2)
+  got <- execute(DBM, 'test', 'select * from test1', post_proc=rac(1,2))
+  expect_equal('a', got)
+})
