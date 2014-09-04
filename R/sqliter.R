@@ -181,39 +181,47 @@ execute.db <- function(object, query, post_proc=identity, ...) {
 #' }
 NULL
 
+#' @export
 as.db <- function(database, path) {
   structure(list(database=database, path=path), class='db')
 }
 
+#' @export
 print.db <- function(x, ...) {
   cat(x$database, x$path, '\n')
   x
 }
 
+#' @export
 as.dbl <- function(dbl) {
   structure(dbl, class='dbl')
 }
 
+#' @export
 print.dbl <- function(x, ...) {
   for (db in x)
     print(db)
   x
 }
 
+#' @export
 as.entity_list <- function(database, label='') {
   structure(database, class='entity_list', label=label)
 }
 
+#' @export
 print.entity_list <- function(x, ...) {
   cat("Database:", x$database, '\n')
   cat(paste0(attr(x, 'label'), ":"), x$entity_names, '\n\n')
   x
 }
 
+#' @export
 as.entity_lists <- function(entity_lists) {
   structure(entity_lists, class='entity_lists')
 }
 
+#' @export
 print.entity_lists <- function(x, ...) {
   for (entity_list in x)
     print(entity_list)
