@@ -22,8 +22,8 @@ NULL
 #' \dontrun{DBM <- sqliter(path=c("data", "another/project/data"))}
 #' 
 sqliter <- function(path='.', ...) {
-  defaults <- list(path=path, ...)
-    
+  defaults <- list(path=sub('\\/$', '', path), ...)
+  
   get <- function(name, drop=TRUE) {
     if (missing(name))
       defaults
