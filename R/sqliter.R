@@ -1,3 +1,10 @@
+
+library(DBI)
+library(RSQLite)
+library(stringr)
+library(functional)
+
+
 #' Functions to wrap SQLite calls
 #' 
 #' sqliter helps users, mainly data munging practioneers, to organize
@@ -8,6 +15,7 @@
 #' @docType package
 #' @import stringr
 #' @import RSQLite
+#' @import DBI
 #' @import functional
 NULL
 
@@ -62,11 +70,11 @@ databases <- function(object, filter='') UseMethod('databases', object)
 #' @rdname databases
 #' @export
 databases.sqliter <- function(object, filter='') {
-  files <- do.call(rbind, lapply(object$get('path'), function(x) {
+  files <- do.call(c, lapply(object$get('path'), function(x) {
     path <- list.files(x, '*.db', full.names=TRUE)
     path
   }))
-  databases <- apply(files, 2, as.db)
+  databases <- lapply(files, as.db)
   dbl <- Filter(function(x) str_detect(x$database, filter), databases)
   db_names <- sapply(dbl, function(db) db$database)
   names(dbl) <- db_names
@@ -84,7 +92,7 @@ entities.sqliter <- function(object, database='') {
 entities.db <- function(object) {
   query <- "select name, sql, type from sqlite_master"
   entities <- query(object, query)
-  as.entity_list(entities, object$database)
+  as.entity_list(entities, object)
 }
 
 #' @export
@@ -93,21 +101,19 @@ tables <- function(object, database='') UseMethod('tables', object)
 #' @export
 tables.sqliter <- function(object, database='') {
   en <- entities(object, database)
-  as.entity_lists(subset(en, type == 'table'))
-}
-
-#' @export
-runDB <- function(db, func) {
-  conn <- dbConnect(RSQLite::SQLite(), db$path)
-  x <- func(conn)
-  dbDisconnect(conn)
-  x
+  if (is.null(en))
+    NULL
+  else
+    as.entity_lists(subset(en, type == 'table'))
 }
 
 #' @export
 tables.db <- function(object, database='') {
   en <- entities(object)
-  as.entity_list(subset(en, type == 'table'), object$database)
+  if (is.null(en))
+    NULL
+  else
+    as.entity_list(subset(en, type == 'table'), database)
 }
 
 #' @export
@@ -116,13 +122,19 @@ indexes <- function(object, database='') UseMethod('indexes', object)
 #' @export
 indexes.sqliter <- function(object, database='') {
   en <- entities(object, database)
-  as.entity_lists(subset(en, type == 'index'))
+  if (is.null(EN))
+    NULL
+  else
+    as.entity_lists(subset(en, type == 'index'))
 }
 
 #' @export
 indexes.db <- function(object) {
   en <- entities(object)
-  as.entity_list(subset(en, type == 'index'), object$database)
+  if (is.null(EN))
+    NULL
+  else
+    as.entity_list(subset(en, type == 'index'), database)
 }
 
 #' execute query into a given database
@@ -151,6 +163,7 @@ indexes.db <- function(object) {
 #' }
 query <- function(object, ...) UseMethod('query', object)
 
+
 #' @rdname query
 #' @export
 query.sqliter <- function(object, database, query, post_proc=identity, index=1, ...) {
@@ -161,16 +174,69 @@ query.sqliter <- function(object, database, query, post_proc=identity, index=1, 
   query(database, query, post_proc, ...)
 }
 
+
+#' @export
 query.db <- function(object, query, post_proc=identity, ...) {
-  database <- object
-  conn <- dbConnect(RSQLite::SQLite(), database$path)
-  if (length(list(...)) != 0) {
-    ds <- dbGetPreparedQuery(conn, query, data.frame(...))
-  } else {
-    ds <- dbGetQuery(conn, query)
-  }
-  dbDisconnect(conn)
+  ds <- execute_in_db(object, function(conn, ...) {
+    if (length(list(...)) != 0)
+      RSQLite::dbGetPreparedQuery(conn, query, data.frame(...))
+    else
+      DBI::dbGetQuery(conn, query)
+  }, ...)
   post_proc(ds)
+}
+
+
+sql_from_file <- function(file){
+  sql <- readLines(file)
+  sql <- unlist(str_split(paste(sql,collapse=" "),";"))
+  sql <- sql[grep("^ *$", sql, invert=T)]
+  sql
+}
+
+
+query_many <- function(con, sql) {
+  lapply(sql, function(.sql) {
+    res <- DBI::dbSendQuery(con, .sql)
+    on.exit(DBI::dbClearResult(res))
+    info <- DBI::dbGetInfo(res)
+    if (info$isSelect == 1)
+      DBI::dbFetch(res)
+    else
+      c(DBI::dbHasCompleted(res) == 1, DBI::dbGetRowsAffected(res))
+  })
+}
+
+#' @export
+query_from_file <- function(db, file) UseMethod('query_from_file', db)
+
+#' @export
+query_from_file.db <- function(db, file) {
+  sql <- sql_from_file(file)
+  x <- execute_in_db(db, query_many, sql)
+  invisible(x)
+}
+
+#' @export
+send_query <- function(db, query, ..., func) UseMethod('send_query', db)
+
+#' @export
+send_query.db <- function(db, query, ..., func=function(r) DBI::dbHasCompleted(r) == 1) {
+  execute_in_db(db, function(conn) {
+    if (length(list(...)) == 0)
+      res <- DBI::dbSendQuery(conn, query)
+    else
+      res <- RSQLite::dbSendPreparedQuery(conn, query, data.frame(...))
+    on.exit(DBI::dbClearResult(res))
+    func(res)
+  })
+}
+
+#' @export
+execute_in_db <- function(db, func, ...) {
+  conn <- DBI::dbConnect(RSQLite::SQLite(), db$path)
+  on.exit(DBI::dbDisconnect(conn))
+  func(conn, ...)
 }
 
 #' @export
@@ -204,15 +270,16 @@ NULL
 
 #' @export
 as.db <- function(path) {
-  parts <- str_split(str_replace(path, '\\.db', ''), '/')
-  database <- parts[[1]][length(parts[[1]])]
+  if (str_detect(path, 'db$')) {
+    parts <- str_split(str_replace(path, '\\.db', ''), '/')
+    database <- parts[[1]][length(parts[[1]])]
+  } else stop(paste("Invalid db path:", path))
   structure(list(database=database, path=path), class='db')
 }
 
 #' @export
 print.db <- function(x, ...) {
   asciify(data.frame(database=x$database, path=x$path))
-  # cat(x$database, x$path, '\n')
   x
 }
 
@@ -229,16 +296,26 @@ print.dbl <- function(x, ...) {
 
 #' @export
 as.entity_list <- function(entity_list, database) {
-  if (dim(entity_list)[1] == 0)
+  if (is.null(entity_list) || dim(entity_list)[1] == 0)
     return(NULL)
-  entity_list$database <- database
+  entity_list$database <- database$database
   attr(entity_list, 'database') <- database
   structure(entity_list, class=c('entity_list', 'data.frame'))
 }
 
 #' @export
+`[.entity_list` <- function(x, r, ...) {
+  print(r)
+  x <- unclass(x)
+  if (any(x$name == r)) {
+    db <- attr(x, 'database')
+    query(db, paste('select * from', r))
+  } else stop(paste('Invalid table name:', r))
+}
+
+#' @export
 print.entity_list <- function(x, ...) {
-  cat("Database:", attr(x, 'database'), '\n')
+  cat("Database:", attr(x, 'database')$database, '\n')
   asciify(x[,c('name', 'type', 'sql')])
   x
 }
@@ -316,3 +393,4 @@ asciify <- function(df, pad = 1, ...) {
     }
     invisible(df)
 }
+
