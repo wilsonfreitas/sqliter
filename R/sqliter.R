@@ -96,7 +96,7 @@ entities.db <- function(object) {
 }
 
 #' @export
-tables <- function(object, database='') UseMethod('tables', object)
+tables <- function(object, ...) UseMethod('tables', object)
 
 #' @export
 tables.sqliter <- function(object, database='') {
@@ -108,19 +108,19 @@ tables.sqliter <- function(object, database='') {
 }
 
 #' @export
-tables.db <- function(object, database='') {
+tables.db <- function(object, ...) {
   en <- entities(object)
   if (is.null(en))
     NULL
   else
-    as.entity_list(subset(en, type == 'table'), database)
+    as.entity_list(subset(en$data, type == 'table'), object)
 }
 
 #' @export
-indexes <- function(object, database='') UseMethod('indexes', object)
+indexes <- function(object, ...) UseMethod('indexes', object)
 
 #' @export
-indexes.sqliter <- function(object, database='') {
+indexes.sqliter <- function(object, database='', ...) {
   en <- entities(object, database)
   if (is.null(EN))
     NULL
@@ -129,12 +129,12 @@ indexes.sqliter <- function(object, database='') {
 }
 
 #' @export
-indexes.db <- function(object) {
+indexes.db <- function(object, ...) {
   en <- entities(object)
   if (is.null(EN))
     NULL
   else
-    as.entity_list(subset(en, type == 'index'), database)
+    as.entity_list(subset(en, type == 'index'), object)
 }
 
 #' execute query into a given database
@@ -294,35 +294,33 @@ print.dbl <- function(x, ...) {
   x
 }
 
-#' @export
 as.entity_list <- function(entity_list, database) {
+  that <- list()
   if (is.null(entity_list) || dim(entity_list)[1] == 0)
     return(NULL)
-  entity_list$database <- database$database
-  attr(entity_list, 'database') <- database
-  structure(entity_list, class=c('entity_list', 'data.frame'))
-}
-
-#' @export
-`[.entity_list` <- function(x, r, ...) {
-  print(r)
-  x <- unclass(x)
-  if (any(x$name == r)) {
-    db <- attr(x, 'database')
-    query(db, paste('select * from', r))
-  } else stop(paste('Invalid table name:', r))
+  entity_list$database <- attr(database, 'database')
+  that$data <- entity_list
+  that$database <- database
+  structure(that, class='entity_list')
 }
 
 #' @export
 print.entity_list <- function(x, ...) {
-  cat("Database:", attr(x, 'database')$database, '\n')
-  asciify(x[,c('name', 'type', 'sql')])
+  cat("Database:", x$database$database, '\n')
+  asciify(x$data[,c('name', 'type', 'sql')])
   x
 }
 
 #' @export
-as.entity_lists <- function(entity_lists) structure(entity_lists, class=c('entity_lists', 'data.frame'))
+'[[.entity_list' <- function(x, r, ...) {
+  # print(r)
+  # x <- unclass(x)
+  if (any(x$data$name == r)) {
+    query(x$database, paste('select * from', r))
+  } else stop(paste('Invalid table name:', r))
+}
 
+as.entity_lists <- function(entity_lists) structure(entity_lists, class=c('entity_lists', 'data.frame'))
 
 #' @export
 print.entity_lists <- function(x, ...) {
