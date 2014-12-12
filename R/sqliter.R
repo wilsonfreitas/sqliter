@@ -313,8 +313,6 @@ print.entity_list <- function(x, ...) {
 
 #' @export
 '[[.entity_list' <- function(x, r, ...) {
-  # print(r)
-  # x <- unclass(x)
   if (any(x$data$name == r)) {
     query(x$database, paste('select * from', r))
   } else stop(paste('Invalid table name:', r))
@@ -350,45 +348,73 @@ rac <- function(i, j) {
 }
 
 asciify <- function(df, pad = 1, ...) {
-    ## error checking
-    stopifnot(is.data.frame(df))
-    ## internal functions
-    SepLine <- function(n, pad = 1) {
-        tmp <- lapply(n, function(x, pad) paste(rep("-", x + (2* pad)),
-                                                collapse = ""),
-                      pad = pad)
-        paste0("+", paste(tmp, collapse = "+"), "+")
+  ## error checking
+  stopifnot(is.data.frame(df))
+  df <- asciify_prepare(df)
+  ## internal functions
+  SepLine <- function(n, pad = 1) {
+    tmp <- lapply(n, function(x, pad) {
+      paste(rep("-", x + (2* pad)), collapse = "")
+    }, pad = pad)
+    paste0("+", paste(tmp, collapse = "+"), "+")
+  }
+  Row <- function(x, n, pad = 1) {
+    foo <- function(i, x, n) {
+      fmt <- paste0("%", n[i], "s")
+      sprintf(fmt, as.character(x[i]))
     }
-    Row <- function(x, n, pad = 1) {
-        foo <- function(i, x, n) {
-            fmt <- paste0("%", n[i], "s")
-            sprintf(fmt, as.character(x[i]))
-        }
-        rowc <- sapply(seq_along(x), foo, x = x, n = n)
-        paste0("|", paste(paste0(rep(" ", pad), rowc, rep(" ", pad)),
-                          collapse = "|"),
-               "|")
-    }
-    ## convert everything to characters
-    df <- as.matrix(df)
-    ## nchar in data
-    mdf <- apply(df, 2, function(x) max(nchar(x)))
-    ## nchar in names
-    cnames <- nchar(colnames(df))
-    ## max nchar of name+data per elements
-    M <- pmax(mdf, cnames)
-    ## write the header
-    sep <- SepLine(M, pad = pad)
-    writeLines(sep)
-    writeLines(Row(colnames(df), M, pad = pad))
-    writeLines(sep)
-    ## write the rows
-    for(i in seq_len(nrow(df))) {
-        ## write a row
-        writeLines(Row(df[i,], M, pad = pad))
-        ## write separator
-        writeLines(sep)
-    }
-    invisible(df)
+    rowc <- sapply(seq_along(x), foo, x = x, n = n)
+    paste0("|", paste(paste0(rep(" ", pad), rowc, rep(" ", pad)), collapse = "|"), "|")
+  }
+  .rowid <- df$.asciify.row
+  df$.asciify.row <- NULL
+  ## convert everything to characters
+  df <- as.matrix(df)
+  ## nchar in data
+  mdf <- apply(df, 2, function(x) max(nchar(x)))
+  ## nchar in names
+  cnames <- nchar(colnames(df))
+  ## max nchar of name+data per elements
+  M <- pmax(mdf, cnames)
+  ## write the header
+  sep <- SepLine(M, pad = pad)
+  writeLines(sep)
+  writeLines(Row(colnames(df), M, pad = pad))
+  writeLines(sep)
+  ## write the rows
+  for(i in seq_len(nrow(df))) {
+    ## write a row
+    writeLines(Row(df[i,], M, pad = pad))
+    ## write separator
+    if (i == length(.rowid) || .rowid[i] != .rowid[i+1])
+      writeLines(sep)
+  }
+  invisible(df)
 }
 
+
+asciify_prepare <- function(df) {
+  df <- lapply(split(df, rownames(df)), function(x) {
+    x <- unclass(x)
+    ds <- lapply(x, function(s) {
+      str_split(as.character(s), '\n')[[1]]
+    })
+    m <- max(sapply(ds, length))
+    ds <- lapply(ds, function(s) {
+      length(s) <- m
+      s[is.na(s)] <- ""
+      s
+    })
+    ds <- do.call(cbind, ds)
+    ds <- as.data.frame(ds)
+    ds$.asciify.row <- attr(x, "row.names")
+    ds
+  })
+  do.call(rbind, df)
+}
+
+# df <- data.frame(int=c(11, 12), name=c('wilson\nfreitas', 'wilson\nfreitas'), stringsAsFactors=FALSE)
+# asciify(asciify_prepare(df))
+#
+# df <- data.frame(int=c(11, 12), name=c('wilson', 'freitas'), stringsAsFactors=FALSE)
+# asciify(asciify_prepare(df))
